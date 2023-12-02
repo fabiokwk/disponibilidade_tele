@@ -6,7 +6,10 @@ import openpyxl
 import pyperclip
 from datetime import datetime
 import os
+import pandas as pd
+import xlsxwriter
 #variaveis auxiliares
+diretorio_a_limpar = 'textos_tabelas'
 tempo_limite_espera = 10
 prog = """${SSN},SIGNAL,${TRY},${COUNT}
 ${SSN},VED,${TRY},${COUNT}
@@ -14,7 +17,7 @@ ${SSN},TFS,${TRY},${COUNT}"""
 
 #entrando na tela de listagem em si
 def main():
-
+    apagar_arquivos_diretorio(diretorio_a_limpar)
     localiza('IRIS_IMAGENS/Listagem_telemetria.png', 0.8)
     py.click()
     localiza('IRIS_IMAGENS/Tela_listagem.png', 0.8)
@@ -24,16 +27,13 @@ def main():
     py.write(teles)
     localiza('IRIS_IMAGENS/Lupa.png', 0.9)
     py.click()
-    time.sleep(1.3)
-    py.click(py.moveRel(0,82))
-    py.hotkey('ctrl','a')
-    py.rightClick()
-    py.moveRel(5,10)
+    localiza('IRIS_IMAGENS/aguardar_pesquisa.png', 0.9)
     py.click()
-    selecionar_todas_as_teles()
-    escrever_prog(prog)
+    py.hotkey('ctrl','a')
+    py.hotkey('ctrl','c')
+    auto_status_tele()
 
-
+      
 def localiza(DIRETORIO, precisao):
     inicio_tempo = time.time()
     while not verificar_tela(DIRETORIO, precisao):
@@ -97,13 +97,8 @@ def confirma_envio_comandos():#confirma envio dos comandos
     localiza('IRIS_IMAGENS/enviar.png', 0.9)
     py.click()
 
-def cria_xlsx():
-
-    py.doubleClick(400,200)
-    py.hotkey('ctrl','a')
-    py.hotkey('ctrl','c')
-    # Aguarde um breve momento para que a operação de copiar seja concluída
-    time.sleep(1)  # Um segundo deve ser suficiente, mas ajuste conforme necessário
+def cria_xlsx_status_teles():
+   
     # Lista dos dados extraídos está armazenada como uma string grande, com base no seu uso anterior
     dados_extraidos = pyperclip.paste()
     # Agora vamos criar um novo Workbook
@@ -113,21 +108,52 @@ def cria_xlsx():
     linhas = dados_extraidos.strip().split('\n')  # separar cada linha pelo '\n'
     for i, linha in enumerate(linhas):
         # Dividindo cada linha em células baseadas na vírgula
-        celulas = linha.split(',')  # separar cada célula pela vírgula
+        celulas = linha.split(' ')  # separar cada célula pela vírgula
         for j, celula in enumerate(celulas):
             # Escrever cada célula na planilha
             ws.cell(row=i+1, column=j+1, value=celula.strip())  # Adiciona os dados nas células
 
     # Salvar o arquivo no mesmo diretório onde o script está sendo executado
     data_hoje = datetime.now()
-    diretorio = r"C:\Users\L805678\Documents\Python\Pycis\Dados_iris_telemetria"
+    diretorio = 'textos_tabelas/status_teles.xlsx'
     # Formate a data no formato que você deseja no nome do arquivo (por exemplo, '2023-11-07')
     data_formatada = data_hoje.strftime('%d_%m_%Y-%H-%M')
 
-    caminho_completo = os.path.join(diretorio, f'dados_exportados_{data_formatada}.xlsx')
+    caminho_completo = os.path.join(diretorio)
 
 
     wb.save(caminho_completo)
+def auto_status_tele():
+    py.hotkey('win','r')
+    time.sleep(2)
+    py.write('soffice.exe --calc')
+    py.press('enter')
+    time.sleep(8)
+    py.hotkey('ctrl','v')
+    time.sleep(1)
+    py.hotkey('ctrl','s')
+    time.sleep(1)
+    py.write('status_teles')
+    py.press('tab')
+    time.sleep(1)
+    py.write('ex')
+    py.press('enter', presses=2, interval=1)
+    time.sleep(1)
+    py.hotkey('alt','f4')
+
+def apagar_arquivos_diretorio(diretorio):
+    # Obtém a lista de arquivos no diretório
+    lista_arquivos = os.listdir(diretorio)
+
+    # Itera sobre os arquivos e os remove
+    for arquivo in lista_arquivos:
+        caminho_arquivo = os.path.join(diretorio, arquivo)
+        try:
+            if os.path.isfile(caminho_arquivo):
+                os.remove(caminho_arquivo)
+                print(f"Arquivo {arquivo} removido com sucesso.")
+        except Exception as e:
+            print(f"Erro ao remover {arquivo}: {e}")
 
 if __name__ == '__main__':
     main()
